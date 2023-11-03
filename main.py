@@ -1,46 +1,21 @@
-import sqlite3
-import click
+"""
+Main cli or app entry point
+"""
+from lib.lib import extract,load_data,query,start_spark,end_spark
 
-def Create(cursor):
-    # Create a table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
-            username TEXT NOT NULL
-        )
-    """)
+def main():
+    extract("https://github.com/fivethirtyeight/data/blob/master/daily-show-guests/daily_show_guests.csv?raw=true",
+            "/workspaces/week10-miniProj-yl794/data.csv")
+    spark = start_spark("DailyShowGuests")
+    df = load_data(spark,"/workspaces/week10-miniProj-yl794/data.csv","DailyShowGuests")
+    query(
+        spark,
+        df,
+        "SELECT YEAR, COUNT(*) AS guest_count FROM guests GROUP BY YEAR ORDER BY YEAR",
+        "guests",
+    )
+    end_spark(spark)
 
-def Update(cursor):
-    cursor.execute("INSERT INTO users (username) VALUES ('Lucy')")
-    cursor.execute("INSERT INTO users (username) VALUES ('Alice')")
-
-def Delete(cursor):
-    cursor.execute("DELETE from users where username = 'Lucy'")
-
-def Read(cursor):
-    cursor.execute("SELECT username FROM users")
-    users = cursor.fetchall()
-    return users
-
-@click.command()
-@click.argument("db")
-def command_line_tool(db):
-    '''
-        user guide for this command line tool
-    '''
-    click.echo("Welcome")
-    conn = sqlite3.connect("db")
-    cursor = conn.cursor()
-    Create(cursor)
-    Update(cursor)
-    Delete(cursor)
-    conn.commit()
-    users = Read(cursor)
-    for user in users:
-        click.echo(user)
-    
-    # Close the connection
-    conn.close()
 
 if __name__ == "__main__":
-    command_line_tool()
+    main()
